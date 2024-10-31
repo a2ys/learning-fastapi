@@ -1,11 +1,16 @@
 from typing import Annotated
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from starlette import status
+
+import auth
 import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
+from auth import get_current_user
 
 app = FastAPI()
+app.include_router(auth.router)
 models.Base.metadata.create_all(bind=engine)
 
 def get_db():
@@ -16,6 +21,7 @@ def get_db():
         db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 origins = [
     "http://localhost:5173",
@@ -29,6 +35,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+@app.get("/api", status_code=status.HTTP_200_OK)
+async def user(usr: user_dependency, db: db_dependency):
+    if usr is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    return {"User": usr}
 
 @app.get("/api/tasks")
 async def get_tasks(db: db_dependency):
@@ -59,3 +71,17 @@ async def delete_task(task_id: int, db: db_dependency):
     db.delete(data)
     db.commit()
     return data
+
+@app.put("/api/task/{task_id}")
+async def update_task(task_id: int, task: models.Task, db: db_dependency):
+    existing_task = db.query(models.ToDoList).filter(models.ToDoList.id == task_id).first()
+    if not existing_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    existing_task.task_name = task.task_name
+    existing_task.status = task.status
+
+    db.commit()
+    db.refresh(existing_task)
+
+    return existing_task
