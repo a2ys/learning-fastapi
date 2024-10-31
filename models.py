@@ -8,6 +8,13 @@ class Task(BaseModel):
     task_name: str
     status: Literal["all", "active", "completed"]
 
+class Users(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True)
+    hashed_password = Column(String)
+
 
 class ToDoList(Base):
     __tablename__ = "todolist"
