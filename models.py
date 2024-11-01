@@ -7,7 +7,6 @@ from database import Base
 class Task(BaseModel):
     task_name: str
     status: Literal["active", "completed"]
-    associated_user_id: int
 
 class Users(Base):
     __tablename__ = "users"
@@ -21,14 +20,6 @@ class Tasks(Base):
 
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
+    task_name = Column(String, unique=True)
     status = Column(String)
     associated_user_id = Column(Integer, ForeignKey("users.id"))
-
-
-class ToDoList(Base):
-    __tablename__ = "todolist"
-
-    id = Column(Integer, primary_key=True, index=True)
-    task_name = Column(String, index=True)
-    status = Column(String, index=True)
