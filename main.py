@@ -46,14 +46,14 @@ async def user(usr: user_dependency):
 async def get_tasks(usr: user_dependency, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    result = db.query(models.ToDoList).all()
+    result = db.query(models.Tasks).filter(models.Tasks.associated_user_id == usr['id']).all()
     return result
 
 @app.get("/api/tasks/{task_id}")
 async def get_task(usr: user_dependency, task_id: int, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    result = db.query(models.ToDoList).filter(models.ToDoList.id == task_id).first()
+    result = db.query(models.Tasks).filter(models.Tasks.associated_user_id == usr['id']).filter(models.Tasks.id == task_id).first()
     if not result:
         raise HTTPException(status_code=404, detail="Task not found")
     return result
@@ -62,7 +62,7 @@ async def get_task(usr: user_dependency, task_id: int, db: db_dependency):
 async def create_task(usr: user_dependency, task: models.Task, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    data = models.ToDoList(task_name=task.task_name, status=task.status)
+    data = models.Tasks(task_name=task.task_name, status=task.status, associated_user_id=usr['id'])
     db.add(data)
     db.commit()
     db.refresh(data)
@@ -72,7 +72,7 @@ async def create_task(usr: user_dependency, task: models.Task, db: db_dependency
 async def delete_task(usr: user_dependency, task_id: int, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    data = db.query(models.ToDoList).filter(models.ToDoList.id == task_id).first()
+    data = db.query(models.Tasks).filter(models.Tasks.associated_user_id == usr['id']).filter(models.Tasks.id == task_id).first()
     if not data:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -84,7 +84,7 @@ async def delete_task(usr: user_dependency, task_id: int, db: db_dependency):
 async def update_task(usr: user_dependency, task_id: int, task: models.Task, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    existing_task = db.query(models.ToDoList).filter(models.ToDoList.id == task_id).first()
+    existing_task = db.query(models.Tasks).filter(models.Tasks.associated_user_id == usr['id']).filter(models.Tasks.id == task_id).first()
     if not existing_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
