@@ -14,11 +14,8 @@ app.include_router(auth.router)
 models.Base.metadata.create_all(bind=engine)
 
 def get_db():
-    db = SessionLocal()
-    try:
+    with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
 user_dependency = Annotated[dict, Depends(get_current_user)]
@@ -59,7 +56,7 @@ async def get_task(usr: user_dependency, task_id: int, db: db_dependency):
     return result
 
 @app.post("/api/task")
-async def create_task(usr: user_dependency, task: models.Task, db: db_dependency):
+async def create_task(usr: user_dependency, task: models.TaskCreate, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     data = models.Tasks(task_name=task.task_name, status=task.status, associated_user_id=usr['id'])
@@ -81,7 +78,7 @@ async def delete_task(usr: user_dependency, task_id: int, db: db_dependency):
     return data
 
 @app.put("/api/task/{task_id}")
-async def update_task(usr: user_dependency, task_id: int, task: models.Task, db: db_dependency):
+async def update_task(usr: user_dependency, task_id: int, task: models.TaskCreate, db: db_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     existing_task = db.query(models.Tasks).filter(models.Tasks.associated_user_id == usr['id']).filter(models.Tasks.id == task_id).first()
