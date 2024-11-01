@@ -37,7 +37,7 @@ app.add_middleware(
 )
 
 @app.get("/api", status_code=status.HTTP_200_OK)
-async def user(usr: user_dependency, db: db_dependency):
+async def user(usr: user_dependency):
     if usr is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     return {"User": usr}
